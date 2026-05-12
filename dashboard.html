@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard C4</title>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial;
+background:#0d1117;
+color:white;
+padding:30px;
+}
+
+h1{
+color:#00e0ff;
+margin-bottom:10px;
+}
+
+.cards{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:20px;
+margin-bottom:30px;
+}
+
+.card{
+background:#161b22;
+padding:20px;
+border-radius:12px;
+}
+
+.numero{
+font-size:35px;
+font-weight:bold;
+color:#00e0ff;
+margin-top:10px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+background:#161b22;
+border-radius:12px;
+overflow:hidden;
+}
+
+th,td{
+padding:15px;
+text-align:left;
+border-bottom:1px solid #333;
+}
+
+th{
+background:#1f2937;
+}
+
+tr:hover{
+background:#222;
+}
+
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+
+<body>
+
+<h1>C4 Security Dashboard</h1>
+<button onclick="logout()" style="float:right; padding:10px; background:red; color:white; border:none; border-radius:6px;">
+Sair
+</button>
+
+<p>Painel administrativo interno</p>
+
+<div class="cards">
+
+<div class="card">
+<p>Total Chamados</p>
+<div class="numero" id="total">0</div>
+</div>
+
+<div class="card">
+<p>Abertos</p>
+<div class="numero" id="abertos">0</div>
+</div>
+
+
+<div class="card">
+<p>Andamento</p>
+<div class="numero" id="andamento">0</div>
+</div>
+
+<div class="card">
+<p>Resolvidos</p>
+<div class="numero" id="resolvidos">0</div>
+</div>
+
+</div>
+
+<table>
+
+<thead>
+<tr>
+<th>Número</th>
+<th>Cliente</th>
+<th>Serviço</th>
+<th>Status</th>
+<th>Responsável</th>
+</tr>
+</thead>
+
+<tbody id="tabelaChamados">
+</tbody>
+
+</table>
+
+<canvas id="grafico"></canvas>
+
+<script>
+
+    function logout(){
+
+fetch('/logout')
+.then(()=>{
+
+window.location.href = 'index.html';
+
+});
+
+}
+
+fetch('/verificar')
+.then(res=>res.json())
+.then(data=>{
+
+if(!data.ok){
+window.location.href = 'index.html';
+}
+
+});
+
+fetch('/chamados')
+.then(res => res.json())
+.then(data => {
+
+let tabela = document.getElementById("tabelaChamados");
+
+let total = data.length;
+let abertos = 0;
+let andamento = 0;
+let resolvidos = 0;
+
+data.forEach(chamado => {
+
+if(chamado.status == "Aberto") abertos++;
+if(chamado.status == "Andamento") andamento++;
+if(chamado.status == "Resolvido") resolvidos++;
+
+tabela.innerHTML += `
+<tr>
+<td>${chamado.id}</td>
+<td>${chamado.cliente}</td>
+<td>${chamado.servico}</td>
+<td>
+<select onchange="atualizarStatus(${chamado.id}, this.value)">
+<option ${chamado.status=='Aberto'?'selected':''}>Aberto</option>
+<option ${chamado.status=='Andamento'?'selected':''}>Andamento</option>
+<option ${chamado.status=='Resolvido'?'selected':''}>Resolvido</option>
+</select>
+</td>
+<td>${chamado.responsavel}</td>
+</tr>
+`;
+
+});
+
+document.getElementById("total").innerText = total;
+document.getElementById("abertos").innerText = abertos;
+document.getElementById("andamento").innerText = andamento;
+document.getElementById("resolvidos").innerText = resolvidos;
+
+});
+
+function atualizarStatus(id, status){
+
+fetch('/atualizar-status',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body: JSON.stringify({id,status})
+})
+.then(res=>res.json())
+.then(data=>{
+if(data.ok){
+console.log("Status atualizado");
+}
+});
+
+}
+
+</script>
+
+</body>
+</html>
